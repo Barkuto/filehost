@@ -9,4 +9,4 @@ COPY . .
 
 VOLUME /data
 
-CMD /bin/bash /root/start.sh
+CMD /bin/bash /root/install.sh && /bin/bash /root/start.sh
