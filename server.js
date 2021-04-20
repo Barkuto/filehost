@@ -1,12 +1,11 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const server = express();
 const { createHash } = require('crypto');
 const hash = createHash('sha256');
 
-console.log(process.env.PORT);
-console.log(process.env.API_KEY);
-console.log(process.env.OVERRIDE_URL);
+console.log('Override URL: ' + process.env.OVERRIDE_URL);
 
 if (!process.env.PORT || !process.env.API_KEY) {
     console.log('Missing Environment Variable(PORT/API_KEY)');
@@ -52,4 +51,31 @@ server.post('/api/upload/', (req, res) => {
     }
 });
 
+if (process.env.DELETE_HOURS) {
+    console.log('Will delete files older than ' + process.env.DELETE_HOURS + ' hours.');
+    setInterval(() => {
+        fs.readdir(out_folder, (err, files) => {
+            if (err) { console.error('Could not read output folder.'); }
+
+            files.forEach((file, index) => {
+                let file_path = path.join(out_folder, file);
+                fs.stat(file_path, (err, stats) => {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        let now = Date.now();
+                        let mdate = stats.mtime;
+                        let age = (now - mdate) / 1000 / 60 / 60;
+                        if (age > process.env.DELETE_HOURS) {
+                            fs.unlink(file_path, (err) => {
+                                if (err) { console.error(err); }
+                                else { console.log('Deleting ' + file) }
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    }, 60 * 60 * 1000);
+}
 server.listen(process.env.PORT, () => { console.log('Server running on port ' + process.env.PORT) });
